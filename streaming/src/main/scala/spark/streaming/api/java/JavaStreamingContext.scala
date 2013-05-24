@@ -430,7 +430,7 @@ class JavaStreamingContext(val ssc: StreamingContext) {
   def zeroMQStream[T](
       publisherUrl:String,
       subscribe: Subscribe,
-      bytesToObjects: Seq[Seq[Byte]] ⇒ Iterator[T],
+      bytesToObjects: Seq[Seq[Byte]] => Iterator[T],
       storageLevel: StorageLevel,
       supervisorStrategy: SupervisorStrategy
     ): JavaDStream[T] = {

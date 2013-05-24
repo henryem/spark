@@ -10,7 +10,7 @@ import spark.Logging
  */
 private[streaming] class ZeroMQReceiver[T: ClassManifest](publisherUrl: String,
   subscribe: Subscribe,
-  bytesToObjects: Seq[Seq[Byte]] ⇒ Iterator[T])
+  bytesToObjects: Seq[Seq[Byte]] => Iterator[T])
   extends Actor with Receiver with Logging {
 
   override def preStart() = context.system.newSocket(SocketType.Sub, Listener(self),
@@ -18,16 +18,16 @@ private[streaming] class ZeroMQReceiver[T: ClassManifest](publisherUrl: String,
 
   def receive: Receive = {
 
-    case Connecting ⇒ logInfo("connecting ...")
+    case Connecting => logInfo("connecting ...")
 
-    case m: ZMQMessage ⇒
+    case m: ZMQMessage =>
       logDebug("Received message for:" + m.firstFrameAsString)
 
       //We ignore first frame for processing as it is the topic
       val bytes = m.frames.tail.map(_.payload)
       pushBlock(bytesToObjects(bytes))
 
-    case Closed ⇒ logInfo("received closed ")
+    case Closed => logInfo("received closed ")
 
   }
 }
