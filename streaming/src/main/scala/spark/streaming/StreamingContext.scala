@@ -206,7 +206,7 @@ class StreamingContext private (
   def zeroMQStream[T: ClassManifest](
       publisherUrl:String,
       subscribe: Subscribe,
-      bytesToObjects: Seq[Seq[Byte]] ⇒ Iterator[T],
+      bytesToObjects: Seq[Seq[Byte]] => Iterator[T],
       storageLevel: StorageLevel = StorageLevel.MEMORY_ONLY_SER_2,
       supervisorStrategy: SupervisorStrategy = ReceiverSupervisorStrategy.defaultStrategy
     ): DStream[T] = {

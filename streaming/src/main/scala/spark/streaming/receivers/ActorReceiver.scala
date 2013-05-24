@@ -17,8 +17,8 @@ object ReceiverSupervisorStrategy {
 
   val defaultStrategy = OneForOneStrategy(maxNrOfRetries = 10, withinTimeRange =
     15 millis) {
-    case _: RuntimeException ⇒ Restart
-    case _: Exception ⇒ Escalate
+    case _: RuntimeException => Restart
+    case _: Exception => Escalate
   }
 }
 
@@ -43,7 +43,7 @@ object ReceiverSupervisorStrategy {
  *       should be same.
  *
  */
-trait Receiver { self: Actor ⇒
+trait Receiver { self: Actor =>
   def pushBlock[T: ClassManifest](iter: Iterator[T]) {
     context.parent ! Data(iter)
   }
@@ -110,25 +110,25 @@ private[streaming] class ActorReceiver[T: ClassManifest](
 
     def receive = {
 
-      case Data(iter: Iterator[_]) ⇒ pushBlock(iter.asInstanceOf[Iterator[T]])
+      case Data(iter: Iterator[_]) => pushBlock(iter.asInstanceOf[Iterator[T]])
 
-      case Data(msg) ⇒
+      case Data(msg) =>
         blocksGenerator += msg.asInstanceOf[T]
         n.incrementAndGet
 
-      case props: Props ⇒
+      case props: Props =>
         val worker = context.actorOf(props)
         logInfo("Started receiver worker at:" + worker.path)
         sender ! worker
 
-      case (props: Props, name: String) ⇒
+      case (props: Props, name: String) =>
         val worker = context.actorOf(props, name)
         logInfo("Started receiver worker at:" + worker.path)
         sender ! worker
 
       case _: PossiblyHarmful => hiccups.incrementAndGet()
 
-      case _: Statistics ⇒
+      case _: Statistics =>
         val workers = context.children
         sender ! Statistics(n.get, workers.size, hiccups.get, workers.mkString("\n"))
 
