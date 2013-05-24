@@ -20,7 +20,9 @@ object BroadcastRddFunctions {
       .mapPartitionsWithIndex({(idx: Int, part: Iterator[Array[D]]) => Iterator.single((idx, part.next))})
   }
   
-  private class IdentityPartitioner(private val numPartitions: Int) extends Partitioner {
+  private class IdentityPartitioner(private val partitions: Int) extends Partitioner {
+    override def numPartitions = partitions
+    
     override def getPartition(key: Any) = {
       require(key.isInstanceOf[Int])
       val keyInt = key.asInstanceOf[Int]
