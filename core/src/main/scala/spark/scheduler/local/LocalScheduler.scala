@@ -20,7 +20,7 @@ private[spark] class LocalScheduler(threads: Int, maxFailures: Int, sc: SparkCon
 
   var attemptId = new AtomicInteger(0)
   var threadPool = Utils.newDaemonFixedThreadPool(threads)
-  val env = SparkEnv.get
+  val env = sc.env
   var listener: TaskSchedulerListener = null
 
   // Application dependencies (added through SparkContext) that we've fetched so far on this node.
@@ -62,36 +62,36 @@ private[spark] class LocalScheduler(threads: Int, maxFailures: Int, sc: SparkCon
 
         // Serialize and deserialize the task so that accumulators are changed to thread-local ones;
         // this adds a bit of unnecessary overhead but matches how the Mesos Executor works.
-        val ser = SparkEnv.get.closureSerializer.newInstance()
-        val bytes = Task.serializeWithDependencies(task, sc.addedFiles, sc.addedJars, ser)
-        logInfo("Size of task " + idInJob + " is " + bytes.limit + " bytes")
-        val (taskFiles, taskJars, taskBytes) = Task.deserializeWithDependencies(bytes)
-        updateDependencies(taskFiles, taskJars)   // Download any files added with addFile
-        val deserStart = System.currentTimeMillis()
-        val deserializedTask = ser.deserialize[Task[_]](
-            taskBytes, Thread.currentThread.getContextClassLoader)
-        val deserTime = System.currentTimeMillis() - deserStart
+        val ser = env.closureSerializer.newInstance()
+//        val bytes = Task.serializeWithDependencies(task, sc.addedFiles, sc.addedJars, ser)
+//        logInfo("Size of task " + idInJob + " is " + bytes.limit + " bytes")
+//        val (taskFiles, taskJars, taskBytes) = Task.deserializeWithDependencies(bytes)
+//        updateDependencies(taskFiles, taskJars)   // Download any files added with addFile
+//        val deserStart = System.currentTimeMillis()
+//        val deserializedTask = ser.deserialize[Task[_]](
+//            taskBytes, Thread.currentThread.getContextClassLoader)
+//        val deserTime = System.currentTimeMillis() - deserStart
 
         // Run it
-        val result: Any = deserializedTask.run(attemptId)
+        val result: Any = task.run(attemptId)
 
         // Serialize and deserialize the result to emulate what the Mesos
         // executor does. This is useful to catch serialization errors early
         // on in development (so when users move their local Spark programs
         // to the cluster, they don't get surprised by serialization errors).
         val serResult = ser.serialize(result)
-        deserializedTask.metrics.get.resultSize = serResult.limit()
+        task.metrics.get.resultSize = serResult.limit()
         val resultToReturn = ser.deserialize[Any](serResult)
         val accumUpdates = ser.deserialize[collection.mutable.Map[Long, Any]](
           ser.serialize(Accumulators.values))
         logInfo("Finished " + task)
         info.markSuccessful()
-        deserializedTask.metrics.get.executorRunTime = info.duration.toInt  //close enough
-        deserializedTask.metrics.get.executorDeserializeTime = deserTime.toInt
+        task.metrics.get.executorRunTime = info.duration.toInt  //close enough
+        task.metrics.get.executorDeserializeTime = 0
 
         // If the threadpool has not already been shutdown, notify DAGScheduler
         if (!Thread.currentThread().isInterrupted)
-          listener.taskEnded(task, Success, resultToReturn, accumUpdates, info, deserializedTask.metrics.getOrElse(null))
+          listener.taskEnded(task, Success, resultToReturn, accumUpdates, info, task.metrics.getOrElse(null))
       } catch {
         case t: Throwable => {
           logError("Exception in task " + idInJob, t)
