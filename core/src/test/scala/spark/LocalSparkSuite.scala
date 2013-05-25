@@ -50,22 +50,3 @@ class LocalSparkSuite extends FunSuite with ShouldMatchers {
     sc.stop()
   }
 }
-
-object LocalSparkSuite {
-  def main(args: Array[String]): Unit = {
-    val master = args(0)
-    val numTasks = args(1).toInt
-    val numReps = args(2).toInt
-    val dataSize = args(3).toInt
-    
-    val sc = LocalSpark.createLocalContext(1)
-    val reps = sc.parallelize(0 until numReps, numTasks)
-    val data = (0 until dataSize)
-    val transform = {(num: Int) => num*2}
-    val results = reps
-      .map({rep =>  Await.result(LocalSpark.runLocally(data, {rdd: RDD[Int] => rdd.map(transform).collect}), Duration.Inf)})
-      .collect
-    println("Results: %s".format(results.deep))
-    sc.stop()
-  }
-}
