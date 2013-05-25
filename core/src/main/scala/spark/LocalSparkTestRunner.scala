@@ -10,7 +10,7 @@ object LocalSparkTestRunner {
     val numReps = args(2).toInt
     val dataSize = args(3).toInt
     
-    val sc = LocalSpark.createLocalContext(1)
+    val sc = new SparkContext(master, "test")
     val reps = sc.parallelize(0 until numReps, numTasks)
     val data = (0 until dataSize)
     val transform = {(num: Int) => num*2}
