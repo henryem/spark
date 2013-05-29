@@ -5,6 +5,7 @@ import Keys._
 import sbtassembly.Plugin._
 import AssemblyKeys._
 import twirl.sbt.TwirlPlugin._
+import com.typesafe.sbteclipse.plugin.EclipsePlugin.EclipseKeys
 // For Sonatype publishing
 //import com.jsuereth.pgp.sbtplugin.PgpKeys._
 
@@ -65,6 +66,9 @@ object SparkBuild extends Build {
     // For Sonatype publishing
     resolvers ++= Seq("sonatype-snapshots" at "https://oss.sonatype.org/content/repositories/snapshots",
       "sonatype-staging" at "https://oss.sonatype.org/service/local/staging/deploy/maven2/"),
+
+    // For the Eclipse build.  In OS X's Eclipse, relative paths don't work.
+    EclipseKeys.relativizeLibs := false,
 
     publishMavenStyle := true,
 
