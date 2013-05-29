@@ -60,7 +60,7 @@ object LocalSpark {
     println("Creating a SparkContext changed the following Java system properties: %s".format(diff))
   }
   
-  case class SparkProperties(host: String, port: String, fileserverUri: String)
+  private case class SparkProperties(host: String, port: String, fileserverUri: String)
   private val SPARK_DRIVER_HOST_PROPERTY = "spark.driver.host"
   private val SPARK_DRIVER_PORT_PROPERTY = "spark.driver.port"
   private val SPARK_FILESERVER_URI_PROPERTY = "spark.fileserver.uri"
