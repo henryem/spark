@@ -25,7 +25,11 @@ private[spark] case class ExceptionFailure(
     className: String,
     description: String,
     stackTrace: Array[StackTraceElement])
-  extends TaskEndReason
+  extends TaskEndReason {
+  override def toString(): String = {
+    "ExceptionFailure %s (%s):%n%s".format(className, description, stackTrace.mkString("\n"))
+  }
+}
 
 private[spark] case class OtherFailure(message: String) extends TaskEndReason
 

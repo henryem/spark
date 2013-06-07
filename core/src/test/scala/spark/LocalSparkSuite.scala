@@ -11,6 +11,7 @@ import java.io.IOException
 import org.scalatest.BeforeAndAfter
 
 class LocalSparkSuite extends FunSuite with ShouldMatchers with BeforeAndAfter {
+  import LocalSparkSuite._
   
   test("Use LocalSpark locally, not inside any Spark operations") {
     val data = (0 until 1000)
@@ -64,27 +65,30 @@ class LocalSparkSuite extends FunSuite with ShouldMatchers with BeforeAndAfter {
     val numReps = 2
     val numNestingLevels = 4
     
-    def runNestedJob(nestingLevel: Int): Any = {
-      if (nestingLevel == 0) {
-        data.map(transform)
-      } else {
-        Await.result(
+    
+    val results = runNestedJob(data, transform, numReps)(numNestingLevels)
+    results.asInstanceOf[Array[_]].deep should equal (makeExpectedResult(data, transform, numReps)(numNestingLevels))
+  }
+}
+
+object LocalSparkSuite {
+  def runNestedJob[D](data: Iterable[D], transform: D => D, numReps: Int)(nestingLevel: Int): Any = {
+    if (nestingLevel == 0) {
+      data.map(transform)
+    } else {
+      Await.result(
           LocalSpark.runLocally(
-            (0 until numReps),
-            {rdd: RDD[_] => rdd.map(_ => runNestedJob(nestingLevel-1)).collect}),
-          Duration.Inf)
-      }
+              (0 until numReps),
+              {rdd: RDD[_] => rdd.map(_ => runNestedJob(data, transform, numReps)(nestingLevel-1)).collect}),
+              Duration.Inf)
     }
-    
-    def makeExpectedResult(nestingLevel: Int): Any = {
-      if (nestingLevel == 0) {
-        data.map(transform)
-      } else {
-        (0 until numReps).map(rep => makeExpectedResult(nestingLevel-1))
-      }
+  }
+
+  def makeExpectedResult[D](data: Iterable[D], transform: D => D, numReps: Int)(nestingLevel: Int): Any = {
+    if (nestingLevel == 0) {
+      data.map(transform)
+    } else {
+      (0 until numReps).map(rep => makeExpectedResult(data, transform, numReps)(nestingLevel-1))
     }
-    
-    val results = runNestedJob(numNestingLevels)
-    results.asInstanceOf[Array[_]].deep should equal (makeExpectedResult(numNestingLevels))
   }
 }

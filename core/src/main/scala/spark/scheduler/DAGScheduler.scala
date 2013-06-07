@@ -29,6 +29,8 @@ class DAGScheduler(
     env: SparkEnv)
   extends TaskSchedulerListener with Logging {
 
+  import DAGSchedulerStaticState._
+  
   def this(taskSched: TaskScheduler) {
     this(taskSched, SparkEnv.get.mapOutputTracker, SparkEnv.get.blockManager.master, SparkEnv.get)
   }
@@ -70,10 +72,6 @@ class DAGScheduler(
   val POLL_TIMEOUT = 10L
 
   private val eventQueue = new LinkedBlockingQueue[DAGSchedulerEvent]
-
-  val nextRunId = new AtomicInteger(0)
-
-  val nextStageId = new AtomicInteger(0)
 
   val idToStage = new TimeStampedHashMap[Int, Stage]
 
@@ -738,4 +736,10 @@ class DAGScheduler(
     metadataCleaner.cancel()
     taskSched.stop()
   }
+}
+
+object DAGSchedulerStaticState {
+  //HACK
+  private[spark] val nextRunId = new AtomicInteger(0)
+  private[spark] val nextStageId = new AtomicInteger(0)
 }

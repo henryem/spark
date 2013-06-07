@@ -68,6 +68,8 @@ class SparkContext(
     val preferredNodeLocationData: scala.collection.Map[String, scala.collection.Set[SplitInfo]] = scala.collection.immutable.Map())
   extends Logging {
 
+  import SparkContextStaticState._
+  
   // Ensure logging is initialized before we spawn any threads
   initLogging()
 
@@ -740,11 +742,7 @@ class SparkContext(
   /** Default min number of partitions for Hadoop RDDs when not given by user */
   def defaultMinSplits: Int = math.min(defaultParallelism, 2)
 
-  private var nextShuffleId = new AtomicInteger(0)
-
   private[spark] def newShuffleId(): Int = nextShuffleId.getAndIncrement()
-
-  private var nextRddId = new AtomicInteger(0)
 
   /** Register a new RDD, returning its RDD ID */
   private[spark] def newRddId(): Int = nextRddId.getAndIncrement()
@@ -760,7 +758,6 @@ class SparkContext(
  * various Spark features.
  */
 object SparkContext {
-
   implicit object DoubleAccumulatorParam extends AccumulatorParam[Double] {
     def addInPlace(t1: Double, t2: Double): Double = t1 + t2
     def zero(initialValue: Double) = 0.0
@@ -868,6 +865,11 @@ object SparkContext {
   def jarOfObject(obj: AnyRef): Seq[String] = jarOfClass(obj.getClass)
 }
 
+object SparkContextStaticState {
+  //HACK
+  private[spark] val nextShuffleId = new AtomicInteger(0)
+  private[spark] val nextRddId = new AtomicInteger(0)
+}
 
 /**
  * A class encapsulating how to convert some type T to Writable. It stores both the Writable class
