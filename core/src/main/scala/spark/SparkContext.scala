@@ -129,6 +129,8 @@ class SparkContext(
   private var taskScheduler: TaskScheduler = {
     // Regular expression used for local[N] master format
     val LOCAL_N_REGEX = """local\[([0-9]+)\]""".r
+    // Regular expression for local[N, doTaskSerialization, doResultSerialization], used to skip serialization when using Spark locally
+    val LOCAL_NO_SERIALIZATION_REGEX = """local\[([0-9]+)\s*,\s*(true|false)\s*,\s*(true|false)\s*\]""".r
     // Regular expression for local[N, maxRetries], used in tests with failing tasks
     val LOCAL_N_FAILURES_REGEX = """local\[([0-9]+)\s*,\s*([0-9]+)\]""".r
     // Regular expression for simulating a Spark cluster of [N, cores, memory] locally
@@ -144,6 +146,9 @@ class SparkContext(
 
       case LOCAL_N_REGEX(threads) =>
         new LocalScheduler(threads.toInt, 0, this)
+
+      case LOCAL_NO_SERIALIZATION_REGEX(threads, doTaskSerialization, doResultSerialization) =>
+        new LocalScheduler(threads.toInt, 0, this, doTaskSerialization.toBoolean, doResultSerialization.toBoolean)
 
       case LOCAL_N_FAILURES_REGEX(threads, maxFailures) =>
         new LocalScheduler(threads.toInt, maxFailures.toInt, this)

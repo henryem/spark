@@ -15,26 +15,29 @@ import com.google.common.base.Objects
 object LocalSpark {
   /** Run @rddFunc locally on an RDD wrapping @data. */
   def runLocally[D: ClassManifest,R](data: Seq[D], rddFunc: RDD[D] => R): Future[R] = {
+    runInLocalContext(sc => rddFunc(createLocalRdd(data, sc)))
+  }
+  
+  /** Run some function @func in a local SparkContext. */
+  def runInLocalContext[R](func: SparkContext => R): Future[R] = {
     val executor = Executors.newSingleThreadExecutor()
     val ec = ExecutionContext.fromExecutor(executor)
     Future({
       require(SparkEnv.get == null)
       val localSc = createLocalContext()
       require(SparkEnv.get == localSc.env)
-      val localRdd = createLocalRdd(data, localSc)
-      val result = rddFunc(localRdd)
+      val result = func(localSc)
       require(SparkEnv.get == localSc.env)
       localSc.stop()
       result
     })(ec)
   }
   
-  
   def createLocalContext(numThreads: Int = 1): SparkContext = {
     this.synchronized {
       val oldSparkProperties = temporarilySetSparkProperties()
       val oldProperties = System.getProperties().clone().asInstanceOf[Properties]
-      val sc = new SparkContext("local[%d]".format(numThreads), "testName") //FIXME
+      val sc = new SparkContext("local[%d,false,false]".format(numThreads), "testName") //FIXME
       val newProperties = System.getProperties().clone().asInstanceOf[Properties]
       displayDiff(oldProperties, newProperties) //TMP
       resetOldSparkProperties(oldSparkProperties)
